@@ -46,7 +46,7 @@ func NewStorjExporter(nodeClients map[string]*storj.Client, lg *zap.Logger) *Sto
 		bandwidthBytes: prometheus.NewDesc(
 			"storj_bandwidth_by_type",
 			"Total bandwidth ingress/egress in bytes.",
-			[]string{"node", "sattellite", "type"},
+			[]string{"node", "satellite", "type"},
 			nil,
 		),
 		storageBytes: prometheus.NewDesc(
