@@ -55,6 +55,12 @@ func NewStorjExporter(nodeClients map[string]*storj.Client, lg *zap.Logger) *Sto
 			[]string{"node", "type"},
 			nil,
 		),
+		auditScore: prometheus.NewDesc(
+			"storj_audit_score",
+			"Node audit score.",
+			[]string{"node", "satellite", "type"},
+			nil,
+		),
 		lg: lg,
 	}
 }
@@ -63,7 +69,7 @@ func (e *StorjExporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.uptime
 	ch <- e.bandwidthBytes
 	ch <- e.storageBytes
-	// ch <- e.auditScore
+	ch <- e.auditScore
 }
 
 func (e *StorjExporter) Collect(ch chan<- prometheus.Metric) {
@@ -139,6 +145,25 @@ func (e *StorjExporter) Collect(ch chan<- prometheus.Metric) {
 						prometheus.CounterValue,
 						float64(satRes.EgressSummary),
 						name, sat.URL, "egress",
+					)
+
+					ch <- prometheus.MustNewConstMetric(
+						e.auditScore,
+						prometheus.GaugeValue,
+						float64(satRes.Audits.AuditScore),
+						name, sat.URL, "audit",
+					)
+					ch <- prometheus.MustNewConstMetric(
+						e.auditScore,
+						prometheus.GaugeValue,
+						float64(satRes.Audits.OnlineScore),
+						name, sat.URL, "online",
+					)
+					ch <- prometheus.MustNewConstMetric(
+						e.auditScore,
+						prometheus.GaugeValue,
+						float64(satRes.Audits.SuspensionScore),
+						name, sat.URL, "suspension",
 					)
 				}()
 			}
