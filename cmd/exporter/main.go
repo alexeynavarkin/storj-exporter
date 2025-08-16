@@ -25,6 +25,7 @@ type Config struct {
 
 type StorjExporter struct {
 	uptime         *prometheus.Desc
+	payout         *prometheus.Desc
 	bandwidthBytes *prometheus.Desc
 	storageBytes   *prometheus.Desc
 	auditScore     *prometheus.Desc
@@ -41,6 +42,12 @@ func NewStorjExporter(nodeClients map[string]*storj.Client, lg *zap.Logger) *Sto
 			"storj_node_uptime_seconds",
 			"Node uptime in seconds",
 			[]string{"node"},
+			nil,
+		),
+		payout: prometheus.NewDesc(
+			"storj_node_payout_dollars",
+			"Node payout info.",
+			[]string{"node", "type"},
 			nil,
 		),
 		bandwidthBytes: prometheus.NewDesc(
@@ -67,20 +74,70 @@ func NewStorjExporter(nodeClients map[string]*storj.Client, lg *zap.Logger) *Sto
 
 func (e *StorjExporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- e.uptime
+	ch <- e.payout
 	ch <- e.bandwidthBytes
 	ch <- e.storageBytes
 	ch <- e.auditScore
 }
 
 func (e *StorjExporter) Collect(ch chan<- prometheus.Metric) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
 	wg := sync.WaitGroup{}
 	for name, cl := range e.nodeClients {
+		// collect metrics from payout method
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*90)
-			defer cancel()
 
+			payoutRes, err := cl.GetSnoPayout(ctx)
+			if err != nil {
+				e.lg.Error("failed to request payout info", zap.Error(err))
+			}
+
+			ch <- prometheus.MustNewConstMetric(
+				e.payout,
+				prometheus.CounterValue,
+				float64(payoutRes.CurrentMonth.Payout),
+				name, "total",
+			)
+			ch <- prometheus.MustNewConstMetric(
+				e.payout,
+				prometheus.CounterValue,
+				float64(payoutRes.CurrentMonth.DiskSpacePayout),
+				name, "disk_space",
+			)
+			ch <- prometheus.MustNewConstMetric(
+				e.payout,
+				prometheus.CounterValue,
+				float64(payoutRes.CurrentMonth.EgressBandwidthPayout),
+				name, "egress_bandwidth",
+			)
+			ch <- prometheus.MustNewConstMetric(
+				e.payout,
+				prometheus.CounterValue,
+				float64(payoutRes.CurrentMonth.EgressRepairAuditPayout),
+				name, "egress_audit_bandwidth",
+			)
+			ch <- prometheus.MustNewConstMetric(
+				e.payout,
+				prometheus.CounterValue,
+				float64(payoutRes.CurrentMonth.Held),
+				name, "held",
+			)
+			ch <- prometheus.MustNewConstMetric(
+				e.payout,
+				prometheus.CounterValue,
+				float64(payoutRes.CurrentMonthExpectations),
+				name, "total_expected",
+			)
+		}()
+
+		// collect metrics from sno & satellite methods
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			snoRes, err := cl.GetSno(ctx)
 			if err != nil {
 				e.lg.Error("failed to scrape node", zap.Error(err))
@@ -169,6 +226,7 @@ func (e *StorjExporter) Collect(ch chan<- prometheus.Metric) {
 			}
 		}()
 	}
+
 	wg.Wait()
 }
 

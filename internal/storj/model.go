@@ -30,3 +30,41 @@ type SNOSatteliteResponse struct {
 		OnlineScore     float32 `json:"onlineScore"`
 	} `json:"audits"`
 }
+
+/*
+	{
+	     "currentMonth": {
+	         "egressBandwidth": 174027539178,
+	         "egressBandwidthPayout": 34.81,
+	         "egressRepairAudit": 75179318272,
+	         "egressRepairAuditPayout": 15.04,
+	         "diskSpace": 1385674931617.358,
+	         "diskSpacePayout": 206.48,
+	         "heldRate": 0,
+	         "payout": 256.33,
+	         "held": 0
+	     },
+	     "previousMonth": {
+	         "egressBandwidth": 114935609922,
+	         "egressBandwidthPayout": 22.990000000000002,
+	         "egressRepairAudit": 132170871690,
+	         "egressRepairAuditPayout": 26.43,
+	         "diskSpace": 2974113962562.14,
+	         "diskSpacePayout": 443.14,
+	         "heldRate": 0,
+	         "payout": 492.56,
+	         "held": 0
+	     },
+	     "currentMonthExpectations": 505
+	 }
+*/
+type SNOPayoutResponse struct {
+	CurrentMonth struct {
+		Payout                  float32 `json:"payout"`
+		DiskSpacePayout         float32 `json:"diskSpacePayout"`
+		EgressBandwidthPayout   float32 `json:"egressBandwidthPayout"`
+		EgressRepairAuditPayout float32 `json:"egressRepairAuditPayout"`
+		Held                    float32 `json:"held"`
+	}
+	CurrentMonthExpectations float32 `json:"currentMonthExpectations"`
+}
