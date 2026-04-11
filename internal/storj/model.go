@@ -1,70 +1,75 @@
 package storj
 
 type SNOResponse struct {
-	StartedAt        string `json:"startedAT"`
+	NodeID string `json:"nodeID"`
+
+	StartedAt        string `json:"startedAt"`
 	LastPingedAt     string `json:"lastPinged"`
 	LastQuicPingedAt string `json:"lastQuicPingedAt"`
 
-	Version string `json:"version"`
+	Version        string `json:"version"`
+	AllowedVersion string `json:"allowedVersion"`
+	UpToDate       bool   `json:"upToDate"`
+	QuicStatus     string `json:"quicStatus"`
 
 	DiskSpace struct {
-		Available float64 `json:"available"`
-		Overused  float64 `json:"overused"`
-		Trash     float64 `json:"trash"`
-		Used      float64 `json:"used"`
+		Used        float64 `json:"used"`
+		Available   float64 `json:"available"`
+		Trash       float64 `json:"trash"`
+		Allocated   float64 `json:"allocated"`
+		Overused    float64 `json:"overused"`
+		Reclaimable float64 `json:"reclaimable"`
 	} `json:"diskSpace"`
 
+	Bandwidth struct {
+		Used      float64 `json:"used"`
+		Available float64 `json:"available"`
+	} `json:"bandwidth"`
+
 	Satellites []struct {
-		ID  string `json:"id"`
-		URL string `json:"url"`
+		ID           string  `json:"id"`
+		URL          string  `json:"url"`
+		Disqualified *string `json:"disqualified"`
+		Suspended    *string `json:"suspended"`
+		VettedAt     *string `json:"vettedAt"`
 	} `json:"satellites"`
 }
 
 type SNOSatteliteResponse struct {
-	EgressSummary  int     `json:"egressSummary"`
-	IngressSummary int     `json:"ingressSummary"`
-	StorageSummary float64 `jsong:"storageSummary"`
-	Audits         struct {
-		AuditScore      float32 `json:"auditScore"`
-		SuspensionScore float32 `json:"suspensionScore"`
-		OnlineScore     float32 `json:"onlineScore"`
+	EgressSummary    int64   `json:"egressSummary"`
+	IngressSummary   int64   `json:"ingressSummary"`
+	BandwidthSummary int64   `json:"bandwidthSummary"`
+	StorageSummary   float64 `json:"storageSummary"`
+	AverageUsageBytes float64 `json:"averageUsageBytes"`
+
+	Audits struct {
+		AuditScore      float64 `json:"auditScore"`
+		SuspensionScore float64 `json:"suspensionScore"`
+		OnlineScore     float64 `json:"onlineScore"`
 	} `json:"audits"`
+
+	PriceModel struct {
+		EgressBandwidth int64 `json:"EgressBandwidth"`
+		RepairBandwidth int64 `json:"RepairBandwidth"`
+		AuditBandwidth  int64 `json:"AuditBandwidth"`
+		DiskSpace       int64 `json:"DiskSpace"`
+	} `json:"priceModel"`
 }
 
-/*
-	{
-	     "currentMonth": {
-	         "egressBandwidth": 174027539178,
-	         "egressBandwidthPayout": 34.81,
-	         "egressRepairAudit": 75179318272,
-	         "egressRepairAuditPayout": 15.04,
-	         "diskSpace": 1385674931617.358,
-	         "diskSpacePayout": 206.48,
-	         "heldRate": 0,
-	         "payout": 256.33,
-	         "held": 0
-	     },
-	     "previousMonth": {
-	         "egressBandwidth": 114935609922,
-	         "egressBandwidthPayout": 22.990000000000002,
-	         "egressRepairAudit": 132170871690,
-	         "egressRepairAuditPayout": 26.43,
-	         "diskSpace": 2974113962562.14,
-	         "diskSpacePayout": 443.14,
-	         "heldRate": 0,
-	         "payout": 492.56,
-	         "held": 0
-	     },
-	     "currentMonthExpectations": 505
-	 }
-*/
+type payoutMonth struct {
+	EgressBandwidth         float64 `json:"egressBandwidth"`
+	EgressBandwidthPayout   float64 `json:"egressBandwidthPayout"`
+	EgressRepairAudit       float64 `json:"egressRepairAudit"`
+	EgressRepairAuditPayout float64 `json:"egressRepairAuditPayout"`
+	DiskSpace               float64 `json:"diskSpace"`
+	DiskSpacePayout         float64 `json:"diskSpacePayout"`
+	HeldRate                float64 `json:"heldRate"`
+	Payout                  float64 `json:"payout"`
+	Held                    float64 `json:"held"`
+}
+
 type SNOPayoutResponse struct {
-	CurrentMonth struct {
-		Payout                  float32 `json:"payout"`
-		DiskSpacePayout         float32 `json:"diskSpacePayout"`
-		EgressBandwidthPayout   float32 `json:"egressBandwidthPayout"`
-		EgressRepairAuditPayout float32 `json:"egressRepairAuditPayout"`
-		Held                    float32 `json:"held"`
-	}
-	CurrentMonthExpectations float32 `json:"currentMonthExpectations"`
+	CurrentMonth             payoutMonth `json:"currentMonth"`
+	PreviousMonth            payoutMonth `json:"previousMonth"`
+	CurrentMonthExpectations float64     `json:"currentMonthExpectations"`
 }
