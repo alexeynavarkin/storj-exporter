@@ -82,5 +82,6 @@ func (c *Client) GetSnoPayout(ctx context.Context) (*SNOPayoutResponse, error) {
 		m.EgressRepairAuditPayout /= 100
 		m.Held /= 100
 	}
+	res.CurrentMonthExpectations /= 100
 	return &res, nil
 }
