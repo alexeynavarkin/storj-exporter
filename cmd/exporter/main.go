@@ -104,7 +104,7 @@ func NewStorjExporter(nodeClients map[string]*storj.Client, lg *zap.Logger) *Sto
 			[]string{"node"}, nil,
 		),
 		bandwidthBytes: prometheus.NewDesc(
-			"storj_bandwidth_by_type",
+			"storj_bandwidth_by_type_bytes_total",
 			"Per-satellite bandwidth usage in bytes since the beginning of the month.",
 			[]string{"node", "satellite", "type"}, nil,
 		),
@@ -262,9 +262,9 @@ func (e *StorjExporter) collectNode(ctx context.Context, ch chan<- prometheus.Me
 				return
 			}
 
-			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.GaugeValue, float64(satRes.IngressSummary), name, satURL, "ingress")
-			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.GaugeValue, float64(satRes.EgressSummary), name, satURL, "egress")
-			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.GaugeValue, float64(satRes.BandwidthSummary), name, satURL, "total")
+			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, float64(satRes.IngressSummary), name, satURL, "ingress")
+			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, float64(satRes.EgressSummary), name, satURL, "egress")
+			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, float64(satRes.BandwidthSummary), name, satURL, "total")
 
 			ch <- prometheus.MustNewConstMetric(e.storageSummary, prometheus.GaugeValue, satRes.StorageSummary, name, satURL)
 			ch <- prometheus.MustNewConstMetric(e.storageAverage, prometheus.GaugeValue, satRes.AverageUsageBytes, name, satURL)

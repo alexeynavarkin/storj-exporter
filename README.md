@@ -12,7 +12,7 @@ All metrics are labeled with `node` (the name from config). Selected metrics:
 - `storj_node_info{node_id,version,allowed_version}` — static info, always 1
 - `storj_disk_space{type}` — `used`, `free`, `allocated`, `trash`, `overused`, `reclaimable`
 - `storj_node_bandwidth_bytes{type}` — node-level bandwidth
-- `storj_bandwidth_by_type{satellite,type}` — per-satellite ingress/egress/total
+- `storj_bandwidth_by_type_bytes_total{satellite,type}` — per-satellite ingress/egress/total (counter)
 - `storj_satellite_storage_summary_byte_hours`, `storj_satellite_storage_average_bytes`
 - `storj_audit_score{satellite,type}` — `audit`, `online`, `suspension`
 - `storj_satellite_status{satellite,type}` — `disqualified`, `suspended`, `vetted`

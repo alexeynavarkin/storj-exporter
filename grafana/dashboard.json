@@ -232,10 +232,97 @@
       "title": "Payout expected",
       "type": "stat"
     },
+    {
+      "datasource": { "type": "prometheus", "uid": "000000004" },
+      "description": "Change in used disk space over the selected time range.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 5 },
+      "id": 106,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "000000004" },
+          "expr": "sum(storj_disk_space{node=~\"$node\", type=\"used\"}) - sum(storj_disk_space{node=~\"$node\", type=\"used\"} offset $__range)",
+          "legendFormat": "Δ used",
+          "refId": "A"
+        }
+      ],
+      "title": "Disk used Δ (range)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "000000004" },
+      "description": "Total bandwidth (ingress + egress) consumed over the selected time range.",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "egress"  }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red"   } }] },
+          { "matcher": { "id": "byName", "options": "ingress" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
+        ]
+      },
+      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 5 },
+      "id": 107,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "000000004" },
+          "expr": "sum(increase(storj_bandwidth_by_type_bytes_total{node=~\"$node\", type=\"egress\"}[$__range]))",
+          "legendFormat": "egress",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "000000004" },
+          "expr": "sum(increase(storj_bandwidth_by_type_bytes_total{node=~\"$node\", type=\"ingress\"}[$__range]))",
+          "legendFormat": "ingress",
+          "refId": "B"
+        }
+      ],
+      "title": "Bandwidth (range)",
+      "type": "stat"
+    },
 
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
       "id": 200,
       "panels": [],
       "title": "Disk space",
@@ -256,7 +343,7 @@
           { "matcher": { "id": "byName", "options": "trash" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] }
         ]
       },
-      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 6 },
+      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 10 },
       "id": 201,
       "options": {
         "displayLabels": ["percent"],
@@ -314,7 +401,7 @@
           { "matcher": { "id": "byName", "options": "free"  }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green"  } }] }
         ]
       },
-      "gridPos": { "h": 9, "w": 16, "x": 8, "y": 6 },
+      "gridPos": { "h": 9, "w": 16, "x": 8, "y": 10 },
       "id": 202,
       "options": {
         "legend": { "calcs": ["last"], "displayMode": "table", "placement": "right", "showLegend": true },
@@ -371,7 +458,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
       "id": 203,
       "options": {
         "legend": { "calcs": ["last", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
@@ -406,7 +493,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
       "id": 204,
       "options": {
         "legend": { "calcs": ["last", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
@@ -416,29 +503,87 @@
         {
           "datasource": { "type": "prometheus", "uid": "000000004" },
           "expr": "storj_disk_space{node=~\"$node\", type=\"used\"}",
-          "legendFormat": "{{node}} used",
+          "legendFormat": "{{node}}",
           "refId": "A"
+        }
+      ],
+      "title": "Used by node",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "000000004" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true
+          }
         },
-        {
-          "datasource": { "type": "prometheus", "uid": "000000004" },
-          "expr": "storj_disk_space{node=~\"$node\", type=\"trash\"}",
-          "legendFormat": "{{node}} trash",
-          "refId": "B"
-        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
+      "id": 205,
+      "options": {
+        "legend": { "calcs": ["last", "min"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "000000004" },
           "expr": "storj_disk_space{node=~\"$node\", type=\"free\"}",
-          "legendFormat": "{{node}} free",
-          "refId": "C"
+          "legendFormat": "{{node}}",
+          "refId": "A"
         }
       ],
-      "title": "Per-node disk space",
+      "title": "Free by node",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "000000004" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
+      "id": 206,
+      "options": {
+        "legend": { "calcs": ["last", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "000000004" },
+          "expr": "storj_disk_space{node=~\"$node\", type=\"trash\"}",
+          "legendFormat": "{{node}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Trash by node",
       "type": "timeseries"
     },
 
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
       "id": 300,
       "panels": [],
       "title": "Bandwidth",
@@ -466,7 +611,7 @@
           { "matcher": { "id": "byName", "options": "ingress" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
         ]
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 24 },
+      "gridPos": { "h": 9, "w": 8, "x": 0, "y": 36 },
       "id": 301,
       "options": {
         "legend": { "calcs": ["last", "max", "mean"], "displayMode": "table", "placement": "bottom", "showLegend": true },
@@ -475,13 +620,13 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "000000004" },
-          "expr": "sum(rate(storj_bandwidth_by_type{node=~\"$node\", type=\"egress\"}[5m]))",
+          "expr": "sum(rate(storj_bandwidth_by_type_bytes_total{node=~\"$node\", type=\"egress\"}[5m]))",
           "legendFormat": "egress",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "000000004" },
-          "expr": "sum(rate(storj_bandwidth_by_type{node=~\"$node\", type=\"ingress\"}[5m]))",
+          "expr": "sum(rate(storj_bandwidth_by_type_bytes_total{node=~\"$node\", type=\"ingress\"}[5m]))",
           "legendFormat": "ingress",
           "refId": "B"
         }
@@ -507,7 +652,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 24 },
+      "gridPos": { "h": 9, "w": 8, "x": 8, "y": 36 },
       "id": 302,
       "options": {
         "legend": { "calcs": ["last", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
@@ -516,18 +661,47 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "000000004" },
-          "expr": "sum by (satellite) (rate(storj_bandwidth_by_type{node=~\"$node\", type=\"egress\"}[5m]))",
-          "legendFormat": "egress · {{satellite}}",
+          "expr": "sum by (satellite) (rate(storj_bandwidth_by_type_bytes_total{node=~\"$node\", type=~\"ingress|egress\"}[5m]))",
+          "legendFormat": "{{satellite}}",
           "refId": "A"
-        },
-        {
-          "datasource": { "type": "prometheus", "uid": "000000004" },
-          "expr": "sum by (satellite) (rate(storj_bandwidth_by_type{node=~\"$node\", type=\"ingress\"}[5m]))",
-          "legendFormat": "ingress · {{satellite}}",
-          "refId": "B"
         }
       ],
       "title": "Bandwidth by satellite",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "000000004" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 36 },
+      "id": 304,
+      "options": {
+        "legend": { "calcs": ["last", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "000000004" },
+          "expr": "sum by (node) (rate(storj_bandwidth_by_type_bytes_total{node=~\"$node\", type=~\"ingress|egress\"}[5m]))",
+          "legendFormat": "{{node}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Bandwidth by node",
       "type": "timeseries"
     },
     {
@@ -548,7 +722,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 33 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 45 },
       "id": 303,
       "options": {
         "legend": { "calcs": ["last"], "displayMode": "table", "placement": "right", "showLegend": true },
@@ -568,7 +742,7 @@
 
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 53 },
       "id": 400,
       "panels": [],
       "title": "SLA & health",
@@ -602,7 +776,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 42 },
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 54 },
       "id": 401,
       "options": {
         "legend": { "calcs": ["last", "min"], "displayMode": "table", "placement": "right", "showLegend": true },
@@ -653,7 +827,7 @@
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 42 },
+      "gridPos": { "h": 9, "w": 8, "x": 16, "y": 54 },
       "id": 402,
       "options": {
         "cellHeight": "sm",
@@ -701,7 +875,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 51 },
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 63 },
       "id": 403,
       "options": {
         "alignValue": "center",
@@ -739,7 +913,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 51 },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 63 },
       "id": 404,
       "options": {
         "colorMode": "value",
@@ -786,7 +960,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 51 },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 63 },
       "id": 405,
       "options": {
         "colorMode": "background",
@@ -817,7 +991,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 57 },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 69 },
       "id": 406,
       "options": {
         "cellHeight": "sm",
@@ -850,7 +1024,7 @@
 
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 62 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 74 },
       "id": 500,
       "panels": [],
       "title": "Payout",
@@ -875,7 +1049,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 63 },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 75 },
       "id": 501,
       "options": {
         "legend": { "calcs": ["last"], "displayMode": "table", "placement": "right", "showLegend": true },
@@ -903,7 +1077,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 63 },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 75 },
       "id": 502,
       "options": {
         "displayLabels": ["percent"],
@@ -946,7 +1120,7 @@
           { "matcher": { "id": "byName", "options": "current"  }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue"   } }] }
         ]
       },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 72 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 84 },
       "id": 503,
       "options": {
         "legend": { "calcs": ["last", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
@@ -1002,5 +1176,5 @@
   "timezone": "",
   "title": "Storj",
   "uid": "kF-iar7nk",
-  "version": 107
+  "version": 108
 }
