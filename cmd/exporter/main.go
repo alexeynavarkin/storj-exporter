@@ -47,12 +47,25 @@ type StorjExporter struct {
 
 	nodeClients map[string]*storj.Client
 
+	bandwidthMu    sync.Mutex
+	bandwidthState map[string]bandwidthState
+
 	lg *zap.Logger
+}
+
+// bandwidthState turns the Storj node's month-to-date bandwidth field — which
+// resets at the month boundary and occasionally returns 0 during transient API
+// errors — into a real monotonically-increasing counter usable with rate().
+type bandwidthState struct {
+	lastAPIValue int64
+	lastMonth    time.Month
+	cumulative   int64
 }
 
 func NewStorjExporter(nodeClients map[string]*storj.Client, lg *zap.Logger) *StorjExporter {
 	return &StorjExporter{
-		nodeClients: nodeClients,
+		nodeClients:    nodeClients,
+		bandwidthState: make(map[string]bandwidthState),
 		up: prometheus.NewDesc(
 			"storj_node_up",
 			"1 if the node API responded successfully during the last scrape.",
@@ -105,7 +118,7 @@ func NewStorjExporter(nodeClients map[string]*storj.Client, lg *zap.Logger) *Sto
 		),
 		bandwidthBytes: prometheus.NewDesc(
 			"storj_bandwidth_by_type_bytes_total",
-			"Per-satellite bandwidth usage in bytes since the beginning of the month.",
+			"Per-satellite bandwidth usage in bytes, accumulated monotonically since exporter start (glitch-filtered from the node's month-to-date API field).",
 			[]string{"node", "satellite", "type"}, nil,
 		),
 		bandwidthNode: prometheus.NewDesc(
@@ -173,6 +186,41 @@ func boolFloat(b bool) float64 {
 		return 1
 	}
 	return 0
+}
+
+// recordBandwidth folds a fresh month-to-date sample from the Storj API into a
+// monotonically-increasing per-(node,satellite,type) counter. A drop within the
+// same calendar month is treated as a transient API glitch and ignored; a drop
+// across a month boundary is treated as a legitimate reset.
+func (e *StorjExporter) recordBandwidth(key string, apiValue int64, now time.Time) float64 {
+	month := now.UTC().Month()
+
+	e.bandwidthMu.Lock()
+	defer e.bandwidthMu.Unlock()
+
+	s, seen := e.bandwidthState[key]
+	switch {
+	case !seen:
+		s = bandwidthState{lastAPIValue: apiValue, lastMonth: month, cumulative: apiValue}
+	case month != s.lastMonth:
+		s.cumulative += apiValue
+		s.lastAPIValue = apiValue
+		s.lastMonth = month
+	case apiValue >= s.lastAPIValue:
+		s.cumulative += apiValue - s.lastAPIValue
+		s.lastAPIValue = apiValue
+	default:
+		// Decrease within the same month: API glitch (often a zeroed field
+		// from a partial response). Keep prior state so the next valid sample
+		// produces the correct delta.
+		e.lg.Debug("ignoring non-monotonic bandwidth sample",
+			zap.String("key", key),
+			zap.Int64("previous", s.lastAPIValue),
+			zap.Int64("got", apiValue),
+		)
+	}
+	e.bandwidthState[key] = s
+	return float64(s.cumulative)
 }
 
 func (e *StorjExporter) collectPayout(ctx context.Context, ch chan<- prometheus.Metric, name string, cl *storj.Client) {
@@ -262,9 +310,10 @@ func (e *StorjExporter) collectNode(ctx context.Context, ch chan<- prometheus.Me
 				return
 			}
 
-			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, float64(satRes.IngressSummary), name, satURL, "ingress")
-			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, float64(satRes.EgressSummary), name, satURL, "egress")
-			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, float64(satRes.BandwidthSummary), name, satURL, "total")
+			now := time.Now()
+			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, e.recordBandwidth(name+"|"+satURL+"|ingress", satRes.IngressSummary, now), name, satURL, "ingress")
+			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, e.recordBandwidth(name+"|"+satURL+"|egress", satRes.EgressSummary, now), name, satURL, "egress")
+			ch <- prometheus.MustNewConstMetric(e.bandwidthBytes, prometheus.CounterValue, e.recordBandwidth(name+"|"+satURL+"|total", satRes.BandwidthSummary, now), name, satURL, "total")
 
 			ch <- prometheus.MustNewConstMetric(e.storageSummary, prometheus.GaugeValue, satRes.StorageSummary, name, satURL)
 			ch <- prometheus.MustNewConstMetric(e.storageAverage, prometheus.GaugeValue, satRes.AverageUsageBytes, name, satURL)
